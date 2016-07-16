@@ -41,7 +41,7 @@ abline(v=mean(mtcars$mpg), col="red", lwd=2)
 ###the hist is vaugely normal-a bit weight to the left with mean 20 mpg
 
 g<-ggplot(mtcars, aes(x=am, y=mpg))
-g<-g+geom_boxplot()+xlab("Transmission Type")+ylab("Fuel Economy (Miles Per Gallon)")+ggtitle("MPG by Transmision Type")
+g<-g+geom_boxplot(notch = F)+xlab("Transmission Type")+ylab("Fuel Economy (Miles Per Gallon)")+ggtitle("MPG by Transmision Type")+stat_summary(fun.y = "mean",shape=23, size=2, fill="white")
 g
 ###looks like a big difference in both center and spread based on transmission type.  Manual transmissions have higher average mpg and greater variability
 
