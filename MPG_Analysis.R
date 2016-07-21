@@ -76,7 +76,14 @@ test$p.value
 ###now lets fit a linear model with mpg as the outcome and transmision type as the predictor 
 
 fit<-lm(mpg~am, mtcars)
+summary(fit)
 
+###the coeffcient on tranmission type 7.245 is statistically signficant and implies that all else being equal a car with manual transmision wil get 7.245 mpg more than one with an automatic 
+###transmission.  The R2 indicates that transmission types explains 35.8% of the observed variation in fuel economy. 
+
+plot(fit$residuals)
+plot(mtcars$am, fit$residuals)
+qplot(mtcars$am, fit$residuals)
 
 
 
