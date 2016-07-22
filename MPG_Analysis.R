@@ -85,6 +85,9 @@ plot(fit$residuals)
 plot(mtcars$am, fit$residuals)
 qplot(mtcars$am, fit$residuals)
 
+####now lets try all the vars
+fitall<-lm(mpg~., data=mtcars)
+summary(fitall)$coef
 
-
+###the only thing signficant at all (at .1 is wt)
 
