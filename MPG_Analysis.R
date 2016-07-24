@@ -66,6 +66,19 @@ g
 auto<-subset(mtcars, am=="auto")
 manual<-subset(mtcars, am=="manual")
 
+g<-ggplot(mtcars, aes(x=mpg))
+g<-g+geom_histogram(fill="white", color="black", binwidth = 3)+facet_grid(am~.)
+g
+
+h<-ggplot(mtcars, aes(x=mpg, fill=am))
+h<-h+geom_histogram(position = "identity", alpha=0.3, binwidth = 3)
+h
+
+i<-ggplot(mtcars, aes(x=mpg, fill=am))+geom_density(alpha=.3)
+
+
+          
+          
 test<-t.test(auto$mpg, manual$mpg, paired = FALSE)
 
 test$conf
@@ -81,20 +94,30 @@ summary(fit)
 ###the coeffcient on tranmission type 7.245 is statistically signficant and implies that all else being equal a car with manual transmision wil get 7.245 mpg more than one with an automatic 
 ###transmission.  The R2 indicates that transmission types explains 35.8% of the observed variation in fuel economy. 
 
-plot(fit$residuals)
+plot(fit$residuals, col=mtcars$am)
 plot(mtcars$am, fit$residuals)
-qplot(mtcars$am, fit$residuals)
+
+ggplot(fit$residuals)
 
 fitted(fit)
+
+###diagnostics-lets check on our model
+plot(fit)
 
 ####now lets try all the vars
 fitall<-lm(mpg~., data=mtcars)
 summary(fitall)$coef
 
+###diagnostics
+plot(fit)
+
 ###the only thing signficant at all (at .1 is wt)
 
 ###interactions
+###wt am and wt:m all sig at the .01 level r 2 .833
 
 fitwtamint<-lm(mpg~am+wt+am:wt,mtcars)
 plot(fitwtamint$residuals)
 summary(fitwtamint)
+
+plot(fitwtamint)
