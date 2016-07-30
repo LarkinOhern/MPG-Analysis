@@ -127,6 +127,8 @@ plot(fitwtamint)
 fit1<-lm(mpg~am,data=mtcars)
 fit2<-update(fit1, mpg~am+wt)
 fit3<-update(fit2, mpg~am+wt+disp)
-fit4<-update(fit2, mpg~am+wt+hp)
+fit4<-update(fit3, mpg~am+wt+hp)
+fit5<-update(fit4, mpg~am+wt+am:wt+hp)
 
-anova(fit1, fit2,fit4)
+
+anova(fit1, fit2,fit3, fit4,fit5)
