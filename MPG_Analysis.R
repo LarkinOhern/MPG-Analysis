@@ -8,7 +8,7 @@
 library(ggplot2)
 library(plyr)
 
-
+?mtcars
 ###grab the data
 
 data("mtcars")
@@ -129,6 +129,10 @@ fit2<-update(fit1, mpg~am+wt)
 fit3<-update(fit2, mpg~am+wt+disp)
 fit4<-update(fit3, mpg~am+wt+hp)
 fit5<-update(fit4, mpg~am+wt+am:wt+hp)
+fit6<-update(fit5, mpg~am+wt+am:wt+cyl)
+fit6<-update(fit6, mpg~am+wt+am:wt+cyl+gear)
+
+anova(fit1,fit2,fit3,fit4, fit5, fit6)
 
 
 anova(fit1, fit2,fit3, fit4,fit5)
