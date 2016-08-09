@@ -1,7 +1,7 @@
 ---
 title: "Talking Transmissions-Impacts on Fuel Economy"
 author: "Larkin O'Hern"
-date: "July 13, 2016"
+date: "August 7, 2016"
 output: html_document
 ---
 
@@ -10,14 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(plyr)
 library(gridExtra)
+library(car)
+library(broom)
+
 
 ```
-###Executive Summary
-This analysis will explore the relationship between fuel economy-measured as miles per gallon-and vehicle transmission type-either automatic or manual to determine:    
-1. Is an automatic or manual transmission better for MPG?    
-2. The quantitative MPG difference between automatic and manual transmissions.    
+####Executive Summary
+This analysis explores the relationship between fuel economy (miles per gallon) and vehicle transmission type (automatic or manual) to determine:    
+Q1. Is an automatic or manual transmission better for MPG?  
+*A. Manual transmissions are associated with better fuel economy for the vehicles in this data set.*  
+2. What is the quantitative MPG difference between automatic and manual transmissions?  
+*A. Once other factors are considered (vehicle weight and horsepower) the impact of transmission type (manual) is associated wth a 2.08 (95% CI -.736, 4.903) MPG increase in fuel economy-but that result is  not statistically significant at either the .05 or .1 levels. This is likely because for the vehicles in the dataset, weight and horsepower overpower transmission type in determining fuel economy.*
 
-###Exploratory Data Analysis 
+####Exploratory Data Analysis 
 ```{r echo=F, include=F}
 
 data("mtcars")
@@ -36,20 +41,20 @@ levels(mtcars$am)<-c("auto","manual")
 ###Lets add vehicle type as a variable just for fun
 mtcars$model<-row.names(mtcars)
 ```
-The mtcars data contains observations on 11 design and performance characteristics of 32 cars drawn from the 1974 Motor Trend US magazine.  I will focus primarily on transmission type (manual vs automatic) and fuel economy (in miles per gallon).  The cars in the data set are almost evenly split between manual (13) and automatic (19) giving plenty of observations for each. Fuel economy ranges from 10.4-33.9 MPG with a mean 20.09 and median 19.02.  If we condition on transmission type stark difference emerge.  
+The mtcars data contains observations on 11 design and performance characteristics of 32 cars drawn from the 1974 Motor Trend US magazine.  I will focus primarily on transmission type (manual vs automatic) and fuel economy (in miles per gallon).  The cars in the data set are almost evenly split between manual (13) and automatic (19) giving plenty of observations for each. Fuel economy ranges from 10.4-33.9 MPG with a mean 20.09 and median 19.02.  If we condition on transmission type, stark differences emerge.  
 
 ```{r echo=FALSE, warning=F, message=FALSE,fig.width=10, eval=TRUE }
 
 g1<-ggplot(mtcars, aes(x=am, y=mpg ))
 g1<-g1+geom_boxplot(notch = F)+xlab("Transmission Type")+ylab("Fuel Economy (Miles Per Gallon)")+ggtitle("MPG by Transmision Type")+stat_summary(fun.y = "mean",shape=23, size=2, fill="white")
 
-g<-ggplot(mtcars, aes(y=mpg, x=reorder(model, mpg, sum), color=am))+geom_point()+xlab("Index")+theme(axis.text.x=element_text(angle=70, hjust=1, vjust=1))+xlab("Model")+ylab("Fuel Economy (Miles Per Gallon)")+ggtitle("MPG by Transmision Type")+labs(color="Transmission")
+g<-ggplot(mtcars, aes(y=mpg, x=reorder(model, mpg, sum), color=am))+geom_point()+xlab("Index")+theme(axis.text.x=element_text(angle=70, hjust=1, vjust=1))+xlab("Model")+ylab("Fuel Economy (Miles Per Gallon)")+ggtitle("MPG by Model (Ordered by Weight)")+labs(color="Transmission")+guides(fill=guide_legend(title=NULL))
 
 grid.arrange(g1, g, ncol=2)
 
 ###looks like a big difference in both center and spread based on transmission type.  Manual transmissions have higher average mpg and greater variability
 ```
-From the histogram we see that cars with manual transmissions have higher average fuel economy and great variability. From the scatter plot we see that almost all f the low fuel economy cars are automatics while most of the high fuel economy cars are manual.
+From the histogram we see that cars with manual transmissions have greater median fuel economy and great variability. From the scatter plot we see that almost all of the low fuel economy cars are automatics while most of the high fuel economy cars are manual.
 
 We can use a quick t test to determine whether the difference in means is statistically significant.
 ```{r echo=FALSE, include=FALSE, warning=F, message=FALSE,eval=TRUE }
@@ -58,59 +63,88 @@ manual<-subset(mtcars, am=="manual")
 test<-t.test(auto$mpg, manual$mpg, paired = FALSE)
 ```
 
-Zero is not included in our confidence interval (`r test$conf`) and our p-value (`r test$p.value`) is below .05 so transmission type appears to make a statistically significant difference in fuel economy. 
+Zero is not included in our confidence interval (`r test$conf`) and our p-value (`r test$p.value`) is below .05 so transmission type appears to make a statistically significant difference in fuel economy-at least when it is the only predictor evaluated. 
 
+####Model Selection
+To quantify the effect of transmission type on fuel economy we will fit a series of linear models of increasing complexity. The simplest model examines transmission type as the only predictor of mpg.
 
-###Model Selection
-To quantify the effect of transmission type on fuel economy we will fit a series of linear models of increasing complexity.
-
-The simplest model examines transmission type as the only predictor of mpg.
-
-```{r echo=FALSE, include=TRUE, warning=F, message=FALSE,eval=TRUE}
+```{r echo=FALSE, include=FALSE, warning=F, message=FALSE,eval=TRUE}
 fit<-lm(mpg~am, mtcars)
 
 summary(fit)
 
 confint(fit)
 ```
-This basic model confirms that transmission type is a significant predictor and the coefficient for transmission type indicates an increase of 7.25 MPG for vehicles with manual transmissions versus those with automatic transmission-all else being equal. Expanding our point prediction to encompasses a 95% confidence interval gives us an expected increase of 3.4 to 10.84 mpg in cars with manual transmissions.  
+This basic model suggests that transmission type is a significant predictor and the coefficient for transmission type indicates an increase of 7.25 MPG for vehicles with manual transmissions versus those with automatic transmission-all else being equal. Expanding our point prediction to encompasses a 95% confidence interval gives us an expected increase of 3.4 to 10.84 MPG in cars with manual transmissions.  
 
-However, transmission type explain only about 35% of the variance in MPG-so there are likley other significant variables that could add explanatory power to our model. 
+However, transmission type explain only about 35% of the variance in MPG-so there are likely other significant variables that could add explanatory power to our model. And importantly, all else is not equal.  The data set does not include the same model vehicle with different transmission types.  Instead it contains different models where transmission type is correlated with other factors impacting fuel economy-especially weight and horsepower.  The distribution of these confounders across models leave very few "like to like" comparisons and increased weight and horse power are both associated with decreased fuel economy AND automatic transmissions as you can see from the plots below.  
 
-Here I fit five additional models each with one additional predictor or interaction between transmission type and predictor (nested models) and compare them using ANOVA.  
+```{r echo=FALSE, warning=F, message=FALSE,fig.width=10, eval=TRUE }
+g3<-ggplot(mtcars, aes(x=hp, y=mpg, color=factor(am)))+geom_point()+ggtitle("Horsepower and MPG")+xlab("Horsepower")+ylab("Fuel Economy (Miles Per Gallon)")+guides(color=guide_legend(title=NULL))
 
+g4<-ggplot(mtcars, aes(x=wt, y=mpg, color=factor(am)))+geom_point()+ggtitle("Weight and MPG")+xlab("Weight (Tons)")+ylab("Fuel Economy (Miles Per Gallon)")+guides(color=guide_legend(title=NULL))
+
+grid.arrange(g3, g4, ncol=2)
+
+```
+
+I next fit five additional models each with one additional predictor between predictor (nested models) and compare them using ANOVA  The results are included in the appendix. Vehicle weight and horse power add predictive power-the other variables do not.
+``````{r echo=FALSE, include=FALSE, warning=F, message=FALSE,eval=TRUE}
+###test nested models
+fit1<-lm(mpg~am,data=mtcars)
+fit2<-update(fit1, mpg~am+wt)
+fit3<-update(fit2, mpg~am+wt+hp)
+fit4<-update(fit3, mpg~am+wt+hp+vs)
+fit5<-update(fit4, mpg~am+wt+hp+carb)
+fit6<-update(fit5, mpg~am+wt+hp+cyl)
+fit7<-update(fit6, mpg~am+wt+hp+disp)
+```
+```{r echo=FALSE, include=FALSE, warning=F, message=FALSE,eval=TRUE}
+
+anova(fit1,fit2,fit3,fit4, fit5, fit6, fit7)
+```
+I've re-fit the model using the significant predictors to generate a new estimate of the impact of transmission type after accounting for the other key variables.Only weight and horsepower were statistically significant and when they are included transmission type is no longer significant (p=.141).  A 1 ton increase in vehicle weight is associate with a loss of 2.87 MPG and each additional unit of horsepower is associated with a loss of .037 MPG.  Manual transmissions are associated with a 2.08 increase in MPG-but again the result is not statistically significant.  The new model explains 82% of the vairance in MPG. Additional information on the model including confidence intervals for each predictor is available in the appendix.
+
+####Residual Diagnostics 
+To determine the appropriateness of the model we can examine the residuals it generates to verify that they conform to our assumptions of linearity, normality,and homoscedasticity-see residual plots in the appendix.  Plotted against fitted values the residuals show no pattern suggesting our linear relationship has captured the systemic variance.  Plotted against fitted values the scaled residuals show constant variance (homoskedasticity).  The only hang up is the Q-Q Normal plot.  Our residuals are not normally distribute which could be cause for further investigation. There are also three potential outliers that future analysis should investigate.     
+
+###Appendix
+####ANOVA comparison of Trial Models:
 ``````{r echo=FALSE, include=TRUE, warning=F, message=FALSE,eval=TRUE}
 ###test nested models
 fit1<-lm(mpg~am,data=mtcars)
 fit2<-update(fit1, mpg~am+wt)
-fit3<-update(fit2, mpg~am+wt+am:wt)
-fit4<-update(fit3, mpg~am+wt+am:wt+hp)
-fit5<-update(fit4, mpg~am+wt+disp+hp+am:wt)
-fit6<-update(fit5, mpg~am+wt+disp+hp+am:wt+cyl)
-fit7<-update(fit6, mpg~am+wt+disp+hp+am:wt+cyl+gear)
+fit3<-update(fit2, mpg~am+wt+hp)
+fit4<-update(fit3, mpg~am+wt+hp+vs)
+fit5<-update(fit4, mpg~am+wt+hp+carb)
+fit6<-update(fit5, mpg~am+wt+hp+cyl)
+fit7<-update(fit6, mpg~am+wt+hp+disp)
 ```
+
+
 ```{r echo=FALSE, include=TRUE, warning=F, message=FALSE,eval=TRUE}
 
 anova(fit1,fit2,fit3,fit4, fit5, fit6, fit7)
 ```
-Vehicle weight and the interaction of weight and transmission type add predictive power-the other variables do not.
 
-I've re-fit the model using the significant predictors to generate a new estimate of the impact of transmission type after accounting for the other key variables.
-
+####Final Model Summary:
 ```{r echo=FALSE, include=TRUE, warning=F, message=FALSE,eval=TRUE}
-
 summary(fit3)
+```
+####Confidence Intervals:
+```{r echo=FALSE, include=TRUE, warning=F, message=FALSE,eval=TRUE}
 confint(fit3)
 ```
+####Residual Plots:  
 
-The new model suggest that manual transmissions add 14.8 MPG versus automatics with a 95% confidence that the true gain is between 6.14 and 23.61 MPG.  Thats signficntly wider-espcially ro the high side than our first model.  Vehicle weight and the intereaction of weight and transmission type are both associate with decreased fl econmy whih makes sense-heavier objects should take more energy to move.  This model exlaines 83% of the variance in MPG a large improvment from our transmission only model.
+```{r echo=FALSE, include=TRUE, warning=F, message=FALSE, fig.width=10,eval=TRUE}
 
-
-###Residual Diagnostics 
-
-
-
-        
-
+plot(fit3, which = 1)
+qqPlot(fit3)
+plot(fit3, which = 3)
+plot(fit3, which = 4)
 
 
+```
+####Sources:
+In addition to course material I utilized R in Action by Robert Kabacoff and R Graphics Cookbook by Winston Chang.
